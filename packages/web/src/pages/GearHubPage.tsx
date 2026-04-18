@@ -1,0 +1,38 @@
+import { useState } from 'react'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { cn } from '@/lib/utils'
+import { BisListPage } from '@/pages/BisListPage'
+import { UpgradeFinderPage } from '@/pages/UpgradeFinderPage'
+import { VaultOptimizerPage } from '@/pages/VaultOptimizerPage'
+
+const TABS = [
+  { id: 'bis', label: 'BiS List' },
+  { id: 'upgrades', label: 'Upgrades' },
+  { id: 'vault', label: 'Vault' },
+]
+
+export function GearHubPage() {
+  const [tab, setTab] = useState('bis')
+
+  return (
+    <div className="w-full space-y-4">
+      <PageHeader title="Gear" highlight="Hub" description="Optimize your equipment" />
+      <div className="border-b border-white/[0.06]">
+        <div className="flex gap-0.5 -mb-px overflow-x-auto">
+          {TABS.map((t) => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              className={cn('px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-all',
+                tab === t.id ? 'text-[color:var(--class-color)] border-[color:var(--class-color)]' : 'text-gray-500 border-transparent hover:text-gray-300')}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div key={tab} className="animate-fade-in">
+        {tab === 'bis' && <BisListPage />}
+        {tab === 'upgrades' && <UpgradeFinderPage />}
+        {tab === 'vault' && <VaultOptimizerPage />}
+      </div>
+    </div>
+  )
+}
