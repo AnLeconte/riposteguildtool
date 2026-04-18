@@ -1,0 +1,66 @@
+name: riposte-guild-tool
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: riposte
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_DB: riposte
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U riposte"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://riposte:${DB_PASSWORD:-changeme}@postgres:5432/riposte
+      REDIS_URL: redis://redis:6379
+      PORT: 3001
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET}
+      SIMC_PATH: /usr/local/bin/simc
+      BLIZZARD_CLIENT_ID: ${BLIZZARD_CLIENT_ID}
+      BLIZZARD_CLIENT_SECRET: ${BLIZZARD_CLIENT_SECRET}
+      BNET_REDIRECT_URI: ${BNET_REDIRECT_URI}
+      FRONTEND_URL: ${FRONTEND_URL:-https://riposte-guild-tool.com}
+      WCL_CLIENT_ID: ${WCL_CLIENT_ID}
+      WCL_CLIENT_SECRET: ${WCL_CLIENT_SECRET}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "80:80"
+      - "443:443"
+
+volumes:
+  pgdata:
+  redisdata:
