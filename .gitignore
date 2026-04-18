@@ -8,3 +8,4 @@ Thumbs.db
 *.simc.tmp
 .claude/
 simc/
+*.tsbuildinfo
