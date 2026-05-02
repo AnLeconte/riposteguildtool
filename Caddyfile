@@ -1,0 +1,27 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Backend API
+	handle /api/* {
+		reverse_proxy server:3001
+	}
+
+	# Socket.io (WebSockets)
+	handle /socket.io/* {
+		reverse_proxy server:3001
+	}
+
+	# Frontend SPA + static assets
+	handle {
+		root * /usr/share/caddy
+		try_files {path} /index.html
+		file_server
+
+		@assets path_regexp \.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$
+		header @assets Cache-Control "public, max-age=2592000, immutable"
+	}
+}

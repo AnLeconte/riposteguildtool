@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: riposte
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       POSTGRES_DB: riposte
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -36,18 +36,47 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://riposte:${DB_PASSWORD:-changeme}@postgres:5432/riposte
+      # Infra
+      DATABASE_URL: postgresql://riposte:${DB_PASSWORD}@postgres:5432/riposte
       REDIS_URL: redis://redis:6379
       PORT: 3001
       NODE_ENV: production
-      JWT_SECRET: ${JWT_SECRET}
       SIMC_PATH: /usr/local/bin/simc
+      SIM_CONCURRENCY: ${SIM_CONCURRENCY:-2}
+
+      # Auth
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      FRONTEND_URL: ${FRONTEND_URL}
+
+      # Blizzard / Battle.net
       BLIZZARD_CLIENT_ID: ${BLIZZARD_CLIENT_ID}
       BLIZZARD_CLIENT_SECRET: ${BLIZZARD_CLIENT_SECRET}
       BNET_REDIRECT_URI: ${BNET_REDIRECT_URI}
-      FRONTEND_URL: ${FRONTEND_URL:-https://riposte-guild-tool.com}
+
+      # WarcraftLogs
       WCL_CLIENT_ID: ${WCL_CLIENT_ID}
       WCL_CLIENT_SECRET: ${WCL_CLIENT_SECRET}
+
+      # Discord OAuth (login + apply)
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      DISCORD_REDIRECT_URI: ${DISCORD_REDIRECT_URI}
+      DISCORD_APPLY_REDIRECT_URI: ${DISCORD_APPLY_REDIRECT_URI}
+
+      # Discord Bot
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      DISCORD_BOT_API_KEY: ${DISCORD_BOT_API_KEY}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID}
+      DISCORD_ABSENCE_CHANNEL_ID: ${DISCORD_ABSENCE_CHANNEL_ID}
+      DISCORD_APPLY_CHANNEL_ID: ${DISCORD_APPLY_CHANNEL_ID}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}
+
+      # Guild metadata
+      GUILD_NAME: ${GUILD_NAME:-Riposte}
+      GUILD_REALM: ${GUILD_REALM:-hyjal}
+      GUILD_REGION: ${GUILD_REGION:-eu}
+
+      # Optional AI
       GROQ_API_KEY: ${GROQ_API_KEY}
 
   web:
@@ -57,10 +86,18 @@ services:
     restart: unless-stopped
     depends_on:
       - server
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN is required}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL is required for Let's Encrypt}
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
 
 volumes:
   pgdata:
   redisdata:
+  caddy_data:
+  caddy_config:

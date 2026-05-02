@@ -14,10 +14,10 @@ RUN pnpm --filter @wow-simc/shared build 2>/dev/null || true
 RUN pnpm --filter @wow-simc/simc-engine build 2>/dev/null || true
 RUN pnpm --filter web build
 
-# ── Stage 2: Serve with nginx ────────────────────────────────────────────────
-FROM nginx:alpine
+# ── Stage 2: Serve with Caddy (auto-HTTPS via Let's Encrypt) ─────────────────
+FROM caddy:2-alpine
 
-COPY --from=builder /app/packages/web/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/packages/web/dist /usr/share/caddy
+COPY Caddyfile /etc/caddy/Caddyfile
 
-EXPOSE 80
+EXPOSE 80 443
