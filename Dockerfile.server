@@ -1,5 +1,7 @@
 # ── Stage 1: Build SimC from source (ARM compatible) ──────────────────────────
-FROM ubuntu:24.04 AS simc-builder
+# Must match runtime base (node:22-slim → Debian Bookworm) so glibc/libstdc++
+# symbols line up — building on a newer base produces a binary that won't run.
+FROM debian:bookworm AS simc-builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates git build-essential cmake libcurl4-openssl-dev \
