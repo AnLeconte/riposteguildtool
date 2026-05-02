@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, useMemo, lazy, Suspense } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { api } from '@/lib/api'
@@ -67,7 +68,13 @@ export function GuildHubPage() {
   const [realm, setRealm] = useState(active?.guildRealm ?? active?.realm ?? '')
   const [guild, setGuild] = useState(active?.guild ?? '')
   const [region, setRegion] = useState(active?.region ?? 'eu')
-  const [tab, setTab] = useState<Tab>('roster')
+  const [searchParams] = useSearchParams()
+  const [tab, setTab] = useState<Tab>((searchParams.get('tab') as Tab) ?? 'roster')
+
+  useEffect(() => {
+    const t = searchParams.get('tab') as Tab
+    if (t && t !== tab) setTab(t)
+  }, [searchParams])
 
   const [rosterData, setRosterData] = useState<RosterData | null>(null)
   const [rosterLoading, setRosterLoading] = useState(false)

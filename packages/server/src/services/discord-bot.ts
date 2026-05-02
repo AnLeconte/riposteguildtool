@@ -19,13 +19,12 @@ import { db } from '../db/index.js'
 import { raid_events, raid_signups } from '../db/schema.js'
 import { eq, and, gte, lte } from 'drizzle-orm'
 import { getGuildRoster } from './blizzard-api.js'
-import { getRioGuildTopMembers } from './raiderio-api.js'
 import { getGuildRecentReports, getReportFights, isWclConfigured } from './warcraftlogs-api.js'
+import { handleMusicMessage } from './discord-music.js'
 
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN ?? ''
 const DISCORD_ABSENCE_CHANNEL_ID = process.env.DISCORD_ABSENCE_CHANNEL_ID ?? ''
 const DISCORD_APPLY_CHANNEL_ID = process.env.DISCORD_APPLY_CHANNEL_ID ?? ''
-const DISCORD_RECAP_CHANNEL_ID = process.env.DISCORD_RECAP_CHANNEL_ID ?? ''
 
 // Guild config for slash commands
 const GUILD_NAME = process.env.GUILD_NAME ?? 'Riposte'
@@ -203,8 +202,16 @@ const slashCommands = [
 async function registerSlashCommands(): Promise<void> {
   if (!client?.application) return
   try {
-    await client.application.commands.set(slashCommands)
-    console.log('[discord-bot] Slash commands registered')
+    // Guild-scoped registration = instant availability
+    const guildId = process.env.DISCORD_GUILD_ID
+    if (guildId) {
+      const guild = await client.guilds.fetch(guildId)
+      await guild.commands.set(slashCommands)
+      console.log(`[discord-bot] Slash commands registered (guild: ${guildId})`)
+    } else {
+      await client.application.commands.set(slashCommands)
+      console.log('[discord-bot] Slash commands registered (global — may take up to 1h)')
+    }
   } catch (err) {
     console.error('[discord-bot] Failed to register slash commands:', err)
   }
@@ -352,154 +359,6 @@ async function handleProgress(interaction: ChatInputCommandInteraction): Promise
   }
 }
 
-// ─── Weekly Recap ────────────────────────────────────────────────────────────
-
-function msUntilNextWednesday08CET(): number {
-  const now = new Date()
-  // CET = UTC+1, CEST = UTC+2. Use a fixed offset approach: 08:00 CET = 07:00 UTC
-  const targetHourUTC = 7
-  const targetDay = 3 // Wednesday
-
-  const current = new Date(now)
-  current.setUTCHours(targetHourUTC, 0, 0, 0)
-
-  // Find next Wednesday
-  const daysUntilWednesday = (targetDay - current.getUTCDay() + 7) % 7
-  if (daysUntilWednesday === 0 && now >= current) {
-    // Already past this Wednesday 08:00 CET, go to next week
-    current.setUTCDate(current.getUTCDate() + 7)
-  } else {
-    current.setUTCDate(current.getUTCDate() + daysUntilWednesday)
-  }
-
-  return current.getTime() - now.getTime()
-}
-
-async function postWeeklyRecap(): Promise<void> {
-  if (!client || !DISCORD_RECAP_CHANNEL_ID) return
-
-  try {
-    const channel = await client.channels.fetch(DISCORD_RECAP_CHANNEL_ID)
-    if (!channel?.isTextBased()) return
-
-    const fields: Array<{ name: string; value: string; inline: boolean }> = []
-
-    // 1. Top 3 M+ scores in the guild
-    try {
-      const topMembers = await getRioGuildTopMembers(GUILD_REGION, GUILD_REALM, GUILD_NAME, 3)
-      if (topMembers.length > 0) {
-        const medals = ['🥇', '🥈', '🥉']
-        const lines = topMembers.map((m, i) =>
-          `${medals[i] ?? ''} **${m.name}** — ${m.score.toFixed(1)} score (${m.class})`,
-        )
-        fields.push({ name: '🏆 Top M+ Scores', value: lines.join('\n'), inline: false })
-      }
-    } catch { /* skip */ }
-
-    // 2. Highest M+ key of the week (from top member recent runs)
-    try {
-      const topMembers = await getRioGuildTopMembers(GUILD_REGION, GUILD_REALM, GUILD_NAME, 20)
-      // We use the guild members endpoint which has score — we can reference the top run from their best
-      if (topMembers.length > 0) {
-        // The highest score member likely has the highest key, display top scorer info
-        const top = topMembers[0]
-        fields.push({
-          name: '🔑 Meilleur joueur M+',
-          value: `**${top.name}** (${top.class}) — Score: ${top.score.toFixed(1)}`,
-          inline: true,
-        })
-      }
-    } catch { /* skip */ }
-
-    // 3. Number of raid events this week
-    try {
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-      const now = new Date()
-      const events = await db
-        .select()
-        .from(raid_events)
-        .where(
-          and(
-            eq(raid_events.guild_name, GUILD_NAME.toLowerCase()),
-            eq(raid_events.guild_realm, GUILD_REALM),
-            gte(raid_events.starts_at, weekAgo),
-            lte(raid_events.starts_at, now),
-          ),
-        )
-      fields.push({
-        name: '📅 Raids cette semaine',
-        value: events.length > 0
-          ? `${events.length} event${events.length > 1 ? 's' : ''} planifie${events.length > 1 ? 's' : ''}`
-          : 'Aucun raid cette semaine',
-        inline: true,
-      })
-    } catch { /* skip */ }
-
-    // 4. New boss kills from WCL
-    try {
-      if (isWclConfigured()) {
-        const reports = await getGuildRecentReports(GUILD_NAME, GUILD_REALM, GUILD_REGION, 5)
-        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
-        const recentReports = reports.filter((r: any) => r.startTime >= weekAgo)
-
-        const bossKills: string[] = []
-        for (const report of recentReports) {
-          try {
-            const summary = await getReportFights(report.code)
-            for (const fight of summary.fights) {
-              if (fight.kill) {
-                bossKills.push(`✅ ${fight.name}`)
-              }
-            }
-          } catch { /* skip */ }
-        }
-
-        if (bossKills.length > 0) {
-          const unique = [...new Set(bossKills)]
-          fields.push({
-            name: '💀 Boss kills cette semaine',
-            value: unique.join('\n'),
-            inline: false,
-          })
-        }
-      }
-    } catch { /* skip */ }
-
-    if (fields.length === 0) {
-      fields.push({ name: 'Recap', value: 'Aucune donnee disponible cette semaine.', inline: false })
-    }
-
-    const embed = new EmbedBuilder()
-      .setTitle(`<${GUILD_NAME}> Weekly Recap`)
-      .setColor(ACCENT_COLOR)
-      .setFields(fields)
-      .setFooter({ text: 'Riposte Guild Tool — Recap Hebdomadaire' })
-      .setTimestamp()
-
-    await (channel as any).send({ embeds: [embed] })
-    console.log('[discord-bot] Weekly recap posted')
-  } catch (err) {
-    console.error('[discord-bot] Failed to post weekly recap:', (err as Error).message)
-  }
-}
-
-function scheduleWeeklyRecap(): void {
-  if (!DISCORD_RECAP_CHANNEL_ID) {
-    console.log('[discord-bot] No DISCORD_RECAP_CHANNEL_ID set, weekly recap disabled')
-    return
-  }
-
-  const ms = msUntilNextWednesday08CET()
-  const hours = Math.round(ms / (1000 * 60 * 60))
-  console.log(`[discord-bot] Weekly recap scheduled in ~${hours}h`)
-
-  setTimeout(() => {
-    postWeeklyRecap()
-    // Then repeat every 7 days
-    setInterval(postWeeklyRecap, 7 * 24 * 60 * 60 * 1000)
-  }, ms)
-}
-
 // ─── Bot startup ─────────────────────────────────────────────────────────────
 
 export function startDiscordBot(): void {
@@ -511,7 +370,10 @@ export function startDiscordBot(): void {
   client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
       GatewayIntentBits.GuildMessageReactions,
+      GatewayIntentBits.GuildVoiceStates,
     ],
     partials: [
       Partials.Message,
@@ -526,9 +388,6 @@ export function startDiscordBot(): void {
 
     // Register slash commands
     await registerSlashCommands()
-
-    // Schedule weekly recap
-    scheduleWeeklyRecap()
   })
 
   // Handle slash command interactions
@@ -545,6 +404,16 @@ export function startDiscordBot(): void {
       case 'progress':
         await handleProgress(interaction)
         break
+    }
+  })
+
+  // Handle r! prefix commands (music)
+  client.on('messageCreate', async (message) => {
+    if (message.author.bot) return
+    try {
+      await handleMusicMessage(message)
+    } catch (err) {
+      console.error('[music] Command error:', err)
     }
   })
 

@@ -32,6 +32,8 @@ const ROUTE_MODULES: Record<string, () => Promise<unknown>> = {
   '/mplus': () => import('@/pages/MplusHubPage'),
   '/guild': () => import('@/pages/GuildHubPage'),
   '/macros': () => import('@/pages/MacroLibraryPage'),
+  '/gm': () => import('@/pages/GmDashboardPage'),
+  '/sim': () => import('@/pages/ResultPage'),
 }
 const prefetched = new Set<string>()
 
@@ -48,20 +50,38 @@ const DROPDOWNS: NavGroup[] = [
       { label: 'Gear Compare', path: '/gear-compare', desc: 'A vs B' },
     ],
   },
+  {
+    label: 'Raid',
+    items: [
+      { label: 'Planner', path: '/raid?tab=planner', desc: 'Maps & phases' },
+      { label: 'Signups', path: '/raid?tab=signup', desc: 'Inscriptions' },
+      { label: 'Notes', path: '/raid?tab=notes', desc: 'Notes de raid' },
+      { label: 'CD Planner', path: '/raid?tab=cd-planner', desc: 'Cooldowns healers' },
+      { label: 'Comp Analyzer', path: '/raid?tab=comp', desc: 'Buffs & utilities' },
+    ],
+  },
+  {
+    label: 'Guild',
+    items: [
+      { label: 'Roster', path: '/guild', desc: 'Membres' },
+      { label: 'Leaderboard', path: '/guild?tab=leaderboard', desc: 'Classements' },
+      { label: 'Logs', path: '/logs', desc: 'WCL reports' },
+      { label: 'Calendar', path: '/raid?tab=calendar', desc: 'Vue mensuelle' },
+    ],
+  },
 ]
 
 const NAV_LINKS: NavItem[] = [
-  { label: 'Raid', path: '/raid' },
-  { label: 'Character', path: '/character' },
-  { label: 'Guild', path: '/guild' },
-  { label: 'Logs', path: '/logs' },
+  { label: 'Perso', path: '/character' },
+  { label: 'GM', path: '/gm' },
 ]
 
 function prefetchRoute(path: string) {
-  if (prefetched.has(path)) return
-  const loader = ROUTE_MODULES[path]
+  const base = path.split('?')[0]
+  if (prefetched.has(base)) return
+  const loader = ROUTE_MODULES[base]
   if (loader) {
-    prefetched.add(path)
+    prefetched.add(base)
     loader()
   }
 }
@@ -76,8 +96,22 @@ export function Layout({ children }: { children: ReactNode }) {
   const navRef = useRef<HTMLDivElement>(null)
 
   const handleLogout = () => { logout(); navigate('/') }
-  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/')
-  const isGroupActive = (group: NavGroup) => group.items.some((i) => isActive(i.path))
+  const isActive = (path: string) => {
+    const [p, qs] = path.split('?')
+    if (location.pathname !== p && !location.pathname.startsWith(p + '/')) return false
+    if (!qs) return true
+    // Check query params match
+    const params = new URLSearchParams(qs)
+    const current = new URLSearchParams(location.search)
+    for (const [key, val] of params) {
+      if (current.get(key) !== val) return false
+    }
+    return true
+  }
+  const isGroupActive = (group: NavGroup) => group.items.some((i) => {
+    const [p] = i.path.split('?')
+    return location.pathname === p || location.pathname.startsWith(p + '/')
+  })
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

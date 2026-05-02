@@ -14,6 +14,7 @@ import { guildAuditRouter } from './routes/guild-audit.js'
 import { guildAnalyticsRouter } from './routes/guild-analytics.js'
 import { raidPlanRouter } from './routes/raid-plan.js'
 import { addonSyncRouter } from './routes/addon-sync.js'
+import gmDashboardRouter from './routes/gm-dashboard.js'
 import { startDiscordBot, stopDiscordBot } from './services/discord-bot.js'
 import { initSocketIO } from './websocket/socket.js'
 import { startWorker, stopWorker } from './queue/index.js'
@@ -36,6 +37,7 @@ app.use('/api/guild/:realm/:name/events', raidEventRouter)
 app.use('/api/raid-plans', raidPlanRouter)
 app.use('/api/img', imageProxyRouter)
 app.use('/api/addon-sync', addonSyncRouter)
+app.use('/api/gm', gmDashboardRouter)
 
 app.get('/api/health', (_, res) => {
   res.json({ status: 'ok' })

@@ -14,17 +14,22 @@ const COMMANDS: Command[] = [
   { label: 'Quick Sim', path: '/quick-sim', category: 'Simulate', keywords: 'sim dps quick fast' },
   { label: 'Top Gear', path: '/top-gear', category: 'Simulate', keywords: 'gear bag best combo' },
   { label: 'Droptimizer', path: '/droptimizer', category: 'Simulate', keywords: 'drop loot upgrade raid dungeon' },
-  { label: 'Stat Weights', path: '/stat-weights', category: 'Simulate', keywords: 'stats scale factors pawn' },
   { label: 'Gear Compare', path: '/gear-compare', category: 'Simulate', keywords: 'compare sets a b' },
-  { label: 'Advanced', path: '/advanced', category: 'Simulate', keywords: 'editor simc profile apl' },
-  // Hubs
-  { label: 'Raid Hub', path: '/raid', category: 'Hub', keywords: 'raid cd planner notes assignments roster comp loot' },
-  { label: 'Gear Hub', path: '/gear', category: 'Hub', keywords: 'gear bis list upgrade vault' },
-  { label: 'Character', path: '/character', category: 'Hub', keywords: 'character profile gear enchant compare' },
-  { label: 'Guild', path: '/guild', category: 'Hub', keywords: 'guild roster mythic plus progression' },
-  { label: 'Logs', path: '/logs', category: 'Hub', keywords: 'logs warcraft wcl report parse compare' },
-  { label: 'Mythic+', path: '/mplus', category: 'Hub', keywords: 'mythic plus score goal dungeon notes keystones' },
-  { label: 'Weekly Reset', path: '/weekly', category: 'Tools', keywords: 'weekly reset vault checklist' },
+  // Raid
+  { label: 'Raid Planner', path: '/raid?tab=planner', category: 'Raid', keywords: 'raid planner maps phases boss' },
+  { label: 'Raid Signups', path: '/raid?tab=signup', category: 'Raid', keywords: 'raid signup inscription event' },
+  { label: 'Raid Notes', path: '/raid?tab=notes', category: 'Raid', keywords: 'raid notes export addon' },
+  { label: 'CD Planner', path: '/raid?tab=cd-planner', category: 'Raid', keywords: 'cooldown healer cd planner timeline' },
+  { label: 'Comp Analyzer', path: '/raid?tab=comp', category: 'Raid', keywords: 'comp analyzer buffs debuffs utility raid' },
+  // Guild
+  { label: 'Guild Roster', path: '/guild', category: 'Guild', keywords: 'guild roster members mythic plus progression' },
+  { label: 'Leaderboard', path: '/guild?tab=leaderboard', category: 'Guild', keywords: 'leaderboard ranking dps hps mplus' },
+  { label: 'Logs', path: '/logs', category: 'Guild', keywords: 'logs warcraft wcl report parse compare' },
+  { label: 'Calendar', path: '/raid?tab=calendar', category: 'Guild', keywords: 'calendar calendrier raid events' },
+  // Perso
+  { label: 'Perso', path: '/character', category: 'Perso', keywords: 'character profile gear enchant compare perso' },
+  // Tools
+  { label: 'GM Dashboard', path: '/gm', category: 'Tools', keywords: 'gm officer dashboard audit enchant attendance ilvl' },
   { label: 'Macros', path: '/macros', category: 'Tools', keywords: 'macro library mouseover focus' },
 ]
 

@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/Card'
@@ -27,9 +27,13 @@ const TABS = [
 ]
 
 export function RaidHubPage() {
-  const [searchParams] = useSearchParams()
-  const initialTab = searchParams.get('tab') ?? 'signup'
-  const [tab, setTab] = useState(initialTab)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [tab, setTab] = useState(searchParams.get('tab') ?? 'signup')
+
+  useEffect(() => {
+    const t = searchParams.get('tab')
+    if (t && t !== tab) setTab(t)
+  }, [searchParams])
 
   return (
     <div className="w-full space-y-4">

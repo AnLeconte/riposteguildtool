@@ -1,0 +1,24 @@
+FROM node:22-slim
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+WORKDIR /app
+
+# 1. Copy only dependency files first (cache layer)
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
+COPY packages/shared/package.json ./packages/shared/package.json
+COPY packages/simc-engine/package.json ./packages/simc-engine/package.json
+COPY packages/web/package.json ./packages/web/package.json
+
+RUN pnpm install
+
+# 2. Copy source
+COPY packages/shared ./packages/shared
+COPY packages/simc-engine ./packages/simc-engine
+COPY packages/web ./packages/web
+
+ENV API_URL=http://server:3001
+
+EXPOSE 5173
+
+CMD ["pnpm", "--filter", "web", "dev"]

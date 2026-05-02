@@ -298,4 +298,10 @@ export const api = {
 
   deleteRaidPlan: (id: string) =>
     request<any>(`/raid-plans/${id}`, { method: 'DELETE' }),
+
+  // GM Dashboard
+  getGmDashboard: (realm: string, guild: string, region = 'eu') =>
+    apiCache(`gm-dash:${realm}:${guild}:${region}`, () =>
+      request<any>(`/gm/dashboard?realm=${encodeURIComponent(realm)}&guild=${encodeURIComponent(guild)}&region=${region}`),
+    MEDIUM),
 }

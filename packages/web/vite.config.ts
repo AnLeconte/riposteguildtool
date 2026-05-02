@@ -50,10 +50,15 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    host: true,
+    watch: {
+      usePolling: true,
+      interval: 1000,
+    },
     proxy: {
-      '/api': 'http://localhost:3001',
+      '/api': process.env.API_URL ?? 'http://localhost:3001',
       '/socket.io': {
-        target: 'http://localhost:3001',
+        target: process.env.API_URL ?? 'http://localhost:3001',
         ws: true,
       },
     },

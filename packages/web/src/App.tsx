@@ -31,6 +31,7 @@ const MplusHubPage = lazy(() => import('./pages/MplusHubPage').then(m => ({ defa
 const GuildHubPage = lazy(() => import('./pages/GuildHubPage').then(m => ({ default: m.GuildHubPage })))
 const MacroLibraryPage = lazy(() => import('./pages/MacroLibraryPage').then(m => ({ default: m.MacroLibraryPage })))
 const PlayerProfilePage = lazy(() => import('./pages/PlayerProfilePage').then(m => ({ default: m.PlayerProfilePage })))
+const GmDashboardPage = lazy(() => import('./pages/GmDashboardPage').then(m => ({ default: m.GmDashboardPage })))
 
 function PageSkeleton() {
   return (
@@ -68,6 +69,7 @@ function AuthenticatedRoutes() {
         <Route path="/mplus" element={<MplusHubPage />} />
         <Route path="/guild" element={<GuildHubPage />} />
         {/* Standalone */}
+        <Route path="/gm" element={<GmDashboardPage />} />
         <Route path="/macros" element={<MacroLibraryPage />} />
         <Route path="/player/:name" element={<PlayerProfilePage />} />
         <Route path="/login" element={<Navigate to="/" replace />} />

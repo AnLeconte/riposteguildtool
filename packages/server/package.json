@@ -11,6 +11,8 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
+    "@discordjs/opus": "^0.10.0",
+    "@discordjs/voice": "^0.19.2",
     "@wow-simc/shared": "workspace:*",
     "@wow-simc/simc-engine": "workspace:*",
     "bullmq": "^5.0.0",
@@ -20,9 +22,12 @@
     "drizzle-orm": "^0.36.0",
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.0",
+    "opusscript": "^0.1.1",
     "postgres": "^3.4.0",
     "socket.io": "^4.8.0",
+    "sodium-native": "^5.1.0",
     "uuid": "^10.0.0",
+    "yt-dlp-exec": "^1.0.2",
     "zod": "^3.23.0"
   },
   "devDependencies": {

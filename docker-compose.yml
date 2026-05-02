@@ -3,19 +3,71 @@ name: riposte-guild-tool
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: riposte_guild_tool
+      POSTGRES_DB: wow_simc
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports:
       - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev.server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./packages/server/src:/app/packages/server/src
+      - ./packages/shared/src:/app/packages/shared/src
+      - ./packages/simc-engine/src:/app/packages/simc-engine/src
+    env_file:
+      - ./packages/server/.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/wow_simc
+      REDIS_URL: redis://redis:6379
+      PORT: 3001
+      NODE_ENV: development
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev.web
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./packages/web/src:/app/packages/web/src
+      - ./packages/web/public:/app/packages/web/public
+      - ./packages/web/index.html:/app/packages/web/index.html
+      - ./packages/shared/src:/app/packages/shared/src
 
 volumes:
   pgdata:
+  redisdata:
