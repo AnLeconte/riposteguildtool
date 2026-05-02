@@ -112,6 +112,20 @@ export const INSTANCES: Instance[] = [
     type: 'dungeon',
     bosses: [],
   },
+  {
+    id: 12,
+    blizzard_id: 1316,
+    name: 'Nexus-Point Xenas',
+    type: 'dungeon',
+    bosses: [],
+  },
+  {
+    id: 13,
+    blizzard_id: 1201,
+    name: 'Algeth\'ar Academy',
+    type: 'dungeon',
+    bosses: [],
+  },
 ]
 
 // Backward-compat export
